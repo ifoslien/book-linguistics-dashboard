@@ -48,3 +48,38 @@ def analyze_book(book, ttr_sample_size=10000):
 def build_dataframe():
     results = [analyze_book(book) for book in books]
     return pd.DataFrame(results)
+
+
+
+
+# adds sentiment scoring, ported from the notebook's sentiment arc section
+from nltk.sentiment import SentimentIntensityAnalyzer
+
+nltk.download('vader_lexicon', quiet=True)
+
+sia = SentimentIntensityAnalyzer()
+
+def sentiment_arc(book, num_bins=20):
+    sents = gutenberg.sents(book)
+    sentence_scores = []
+    for sent in sents:
+        text = ' '.join(sent)
+        score = sia.polarity_scores(text)['compound']
+        sentence_scores.append(score)
+
+    bin_size = len(sentence_scores) // num_bins
+    binned_scores = []
+    for i in range(num_bins):
+        start = i * bin_size
+        end = start + bin_size
+        bin_scores = sentence_scores[start:end]
+        binned_scores.append(sum(bin_scores) / len(bin_scores))
+    return binned_scores
+
+def build_arc_dataframe():
+    arc_rows = []
+    for book in books:
+        scores = sentiment_arc(book)
+        for i, score in enumerate(scores):
+            arc_rows.append({'book': book, 'chunk': i + 1, 'sentiment': score})
+    return pd.DataFrame(arc_rows)
