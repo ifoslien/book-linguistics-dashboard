@@ -1,0 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500&display=swap');
+
+body {
+    background-color: #f7f3ec;
+    color: #2b241c;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+h1 {
+    font-family: 'Lora', serif;
+    color: #2b241c;
+}
