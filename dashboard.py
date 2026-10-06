@@ -13,6 +13,9 @@ metric_options = {
     'flesch_kincaid_grade': 'Reading Difficulty (Flesch-Kincaid Grade)'
 }
 
+# muted palette matching the bookish theme, one color per book
+muted_palette = ['#A9C6E0', '#D9A182', '#8FBFAA', '#D8B979', '#D9A6BC', '#7A9B6E', '#A79BD1']
+
 sentiment_fig = px.line(
     arc_df,
     x='chunk',
@@ -20,7 +23,7 @@ sentiment_fig = px.line(
     color='book',
     title='Sentiment Across the Story by Book',
     labels={'chunk': 'Story Progress (chunk)', 'sentiment': 'Sentiment Score'},
-    color_discrete_sequence=['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7']
+    color_discrete_sequence=muted_palette
 )
 sentiment_fig.update_layout(template='plotly_white')
 
@@ -49,7 +52,7 @@ def update_chart(selected_metric):
         y=selected_metric,
         title=metric_options[selected_metric],
         labels={'book': 'Book', selected_metric: metric_options[selected_metric]},
-        color_discrete_sequence=['#2a78d6']
+        color_discrete_sequence=['#A9C6E0']
     )
     fig.update_layout(template='plotly_white', showlegend=False)
     return fig
