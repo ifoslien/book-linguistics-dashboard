@@ -10,3 +10,44 @@ h1 {
     font-family: 'Lora', serif;
     color: #2b241c;
 }
+
+.Select-control {
+    background-color: #fffdf8;
+    border: 1px solid #e8e0d0;
+    border-radius: 4px;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.Select-value-label {
+    color: #2b241c !important;
+}
+
+.Select-menu-outer {
+    background-color: #fffdf8;
+    border: 1px solid #e8e0d0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.Select-option {
+    background-color: #fffdf8;
+    color: #2b241c;
+}
+
+.Select-option.is-focused {
+    background-color: #A9C6E0;
+    color: #2b241c;
+}
+
+
+.dash-options-list-option {
+    background-color: #fffdf8;
+    color: #2b241c;
+}
+
+.dash-options-list-option:hover {
+    background-color: #A9C6E0;
+}
+
+.dash-options-list-option-text {
+    color: #2b241c;
+}
