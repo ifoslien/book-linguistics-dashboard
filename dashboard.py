@@ -31,14 +31,18 @@ app = Dash(__name__)
 
 app.layout = html.Div([
     html.H1('Linguistic Style Dashboard'),
-    dcc.Dropdown(
-        id='metric-dropdown',
-        options=[{'label': label, 'value': metric} for metric, label in metric_options.items()],
-        value='type_token_ratio_sample'
-    ),
-    dcc.Graph(id='metric-chart'),
-    dcc.Graph(figure=sentiment_fig)
-])
+    html.Div([
+        dcc.Dropdown(
+            id='metric-dropdown',
+            options=[{'label': label, 'value': metric} for metric, label in metric_options.items()],
+            value='type_token_ratio_sample'
+        ),
+        dcc.Graph(id='metric-chart')
+    ], className='card'),
+    html.Div([
+        dcc.Graph(figure=sentiment_fig)
+    ], className='card')
+], className='page')
 
 # this function reruns automatically whenever the dropdown value changes
 @app.callback(
