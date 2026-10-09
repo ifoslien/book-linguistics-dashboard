@@ -52,6 +52,22 @@ stat_tiles = html.Div([
     ], className='stat-tile')
 ], className='stat-row')
 
+# curated findings written during the earlier analysis, not recomputed here
+findings = [
+    'Sense and Sensibility has the highest sentiment volatility in the set, despite sharing an author with the steadier Emma and Persuasion.',
+    'Moby Dick sits alone on the style map, distant from every other book on nearly every metric.',
+    'The two Chesterton novels form the tightest style cluster of any pair in the set.',
+    'Austen\'s three novels all surface formal social titles like mr and mrs among their top words, while neither Chesterton novel does.'
+]
+
+findings_panel = html.Div([
+    html.H2('Notable Findings'),
+    html.Div([
+        html.Div(finding, className='finding-row')
+        for finding in findings
+    ])
+], className='card')
+
 app = Dash(__name__)
 
 app.layout = html.Div([
@@ -67,7 +83,8 @@ app.layout = html.Div([
     ], className='card'),
     html.Div([
         dcc.Graph(figure=sentiment_fig)
-    ], className='card')
+    ], className='card'),
+    findings_panel
 ], className='page')
 
 # this function reruns automatically whenever the dropdown value changes
