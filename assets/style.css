@@ -67,3 +67,34 @@ h1 {
     margin-bottom: 24px;
     box-shadow: 0 1px 3px rgba(43, 36, 28, 0.08);
 }
+
+.stat-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-tile {
+    background-color: #fffdf8;
+    border: 1px solid #e8e0d0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(43, 36, 28, 0.08);
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #7a7062;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-family: 'Lora', serif;
+    font-size: 28px;
+    color: #2b241c;
+}
+
+.stat-value-text {
+    font-size: 16px;
+}

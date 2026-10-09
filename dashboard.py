@@ -27,10 +27,36 @@ sentiment_fig = px.line(
 )
 sentiment_fig.update_layout(template='plotly_white')
 
+# pulls a few headline facts from the existing data for the summary row
+num_books = len(df)
+richest_vocab_book = df.loc[df['type_token_ratio_sample'].idxmax(), 'book']
+easiest_read_book = df.loc[df['flesch_kincaid_grade'].idxmin(), 'book']
+most_volatile_book = arc_df.groupby('book')['sentiment'].std().idxmax()
+
+stat_tiles = html.Div([
+    html.Div([
+        html.Div('Books Analyzed', className='stat-label'),
+        html.Div(str(num_books), className='stat-value')
+    ], className='stat-tile'),
+    html.Div([
+        html.Div('Richest Vocabulary', className='stat-label'),
+        html.Div(richest_vocab_book, className='stat-value stat-value-text')
+    ], className='stat-tile'),
+    html.Div([
+        html.Div('Easiest to Read', className='stat-label'),
+        html.Div(easiest_read_book, className='stat-value stat-value-text')
+    ], className='stat-tile'),
+    html.Div([
+        html.Div('Most Volatile Sentiment', className='stat-label'),
+        html.Div(most_volatile_book, className='stat-value stat-value-text')
+    ], className='stat-tile')
+], className='stat-row')
+
 app = Dash(__name__)
 
 app.layout = html.Div([
     html.H1('Linguistic Style Dashboard'),
+    stat_tiles,
     html.Div([
         dcc.Dropdown(
             id='metric-dropdown',
