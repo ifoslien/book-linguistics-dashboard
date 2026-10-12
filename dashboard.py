@@ -1,9 +1,10 @@
 # dashboard.py is the interactive dashboard
 from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
-from analysis import build_dataframe, build_arc_dataframe
+import plotly.graph_objects as go
+from analysis import build_arc_dataframe, build_full_dataframe
 
-df = build_dataframe()
+df = build_full_dataframe()
 arc_df = build_arc_dataframe()
 
 # maps each column name to a readable label for the dropdown and chart title
@@ -27,11 +28,38 @@ sentiment_fig = px.line(
 )
 sentiment_fig.update_layout(template='plotly_white')
 
+# normalizes each style feature to a 0 to 1 scale so they can share one radar axis
+radar_features = ['type_token_ratio_sample', 'avg_sentence_length', 'flesch_kincaid_grade', 'avg_sentiment', 'sentiment_volatility']
+radar_labels = ['Vocabulary Richness', 'Sentence Length', 'Reading Difficulty', 'Avg Sentiment', 'Sentiment Volatility']
+
+normalized = df.copy()
+for feature in radar_features:
+    min_val = df[feature].min()
+    max_val = df[feature].max()
+    normalized[feature] = (df[feature] - min_val) / (max_val - min_val)
+
+radar_fig = go.Figure()
+for i, row in normalized.iterrows():
+    values = row[radar_features].tolist()
+    values.append(values[0])
+    radar_fig.add_trace(go.Scatterpolar(
+        r=values,
+        theta=radar_labels + [radar_labels[0]],
+        name=row['book'],
+        line=dict(color=muted_palette[i % len(muted_palette)]),
+        mode='lines'
+    ))
+radar_fig.update_layout(
+    polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+    template='plotly_white',
+    title='Style Profile by Book'
+)
+
 # pulls a few headline facts from the existing data for the summary row
 num_books = len(df)
 richest_vocab_book = df.loc[df['type_token_ratio_sample'].idxmax(), 'book']
 easiest_read_book = df.loc[df['flesch_kincaid_grade'].idxmin(), 'book']
-most_volatile_book = arc_df.groupby('book')['sentiment'].std().idxmax()
+most_volatile_book = df.loc[df['sentiment_volatility'].idxmax(), 'book']
 
 stat_tiles = html.Div([
     html.Div([
@@ -83,6 +111,9 @@ app.layout = html.Div([
     ], className='card'),
     html.Div([
         dcc.Graph(figure=sentiment_fig)
+    ], className='card'),
+    html.Div([
+        dcc.Graph(figure=radar_fig)
     ], className='card'),
     findings_panel
 ], className='page')

@@ -83,3 +83,12 @@ def build_arc_dataframe():
         for i, score in enumerate(scores):
             arc_rows.append({'book': book, 'chunk': i + 1, 'sentiment': score})
     return pd.DataFrame(arc_rows)
+
+
+# merges the base stats with sentiment average and volatility per book
+def build_full_dataframe():
+    df = build_dataframe()
+    arc_df = build_arc_dataframe()
+    sentiment_summary = arc_df.groupby('book')['sentiment'].agg(['mean', 'std']).reset_index()
+    sentiment_summary.columns = ['book', 'avg_sentiment', 'sentiment_volatility']
+    return df.merge(sentiment_summary, on='book')
