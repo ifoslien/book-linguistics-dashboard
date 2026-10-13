@@ -2,10 +2,11 @@
 from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
 import plotly.graph_objects as go
-from analysis import build_arc_dataframe, build_full_dataframe
+from analysis import build_arc_dataframe, build_full_dataframe, build_top_words_dataframe
 
 df = build_full_dataframe()
 arc_df = build_arc_dataframe()
+top_words_df = build_top_words_dataframe()
 
 # maps each column name to a readable label for the dropdown and chart title
 metric_options = {
@@ -96,10 +97,19 @@ findings_panel = html.Div([
     ])
 ], className='card')
 
+# short writeup explaining the data source and methods for anyone landing on the dashboard cold
+about_panel = html.Div([
+    html.H2('About This Project'),
+    html.P('This dashboard compares the linguistic style of seven classic novels pulled from the NLTK Gutenberg corpus, spanning Jane Austen, Herman Melville, Lewis Carroll, and G.K. Chesterton. The set was chosen for contrast since it pairs three novels from one author against standalone outliers, which makes it possible to see whether a book\'s style owes more to its author or to the book itself.'),
+    html.P('Vocabulary richness comes from the type token ratio on a 10,000 word sample per book, sentence length is the average words per sentence, and reading difficulty is the Flesch-Kincaid grade level. Sentiment is scored sentence by sentence with VADER, then binned into 20 chunks per book to trace how the tone shifts across the story and how much it varies.'),
+    html.P('Built as part of a 100 days of code challenge.')
+], className='card')
+
 app = Dash(__name__)
 
 app.layout = html.Div([
     html.H1('Linguistic Style Dashboard'),
+    about_panel,
     stat_tiles,
     html.Div([
         dcc.Dropdown(
@@ -114,6 +124,15 @@ app.layout = html.Div([
     ], className='card'),
     html.Div([
         dcc.Graph(figure=radar_fig)
+    ], className='card'),
+    html.Div([
+        html.H2('Top Words by Book'),
+        dcc.Dropdown(
+            id='book-dropdown',
+            options=[{'label': book, 'value': book} for book in df['book']],
+            value='austen-emma.txt'
+        ),
+        dcc.Graph(id='top-words-chart')
     ], className='card'),
     findings_panel
 ], className='page')
@@ -133,6 +152,31 @@ def update_chart(selected_metric):
         color_discrete_sequence=['#A9C6E0']
     )
     fig.update_layout(template='plotly_white', showlegend=False)
+    return fig
+
+# reruns whenever a different book is picked, sorted so the most frequent word sits on top
+@app.callback(
+    Output('top-words-chart', 'figure'),
+    Input('book-dropdown', 'value')
+)
+def update_top_words_chart(selected_book):
+    book_words = top_words_df[top_words_df['book'] == selected_book].sort_values('count')
+    fig = px.bar(
+        book_words,
+        x='count',
+        y='word',
+        orientation='h',
+        title=f'Most Frequent Words in {selected_book}',
+        labels={'count': 'Occurrences', 'word': 'Word'},
+        color_discrete_sequence=['#D9A182']
+    )
+    # tall enough and forced to one tick per bar, otherwise plotly skips every other word label
+    fig.update_layout(
+        template='plotly_white',
+        showlegend=False,
+        height=max(400, len(book_words) * 28)
+    )
+    fig.update_yaxes(tickmode='linear')
     return fig
 
 if __name__ == '__main__':

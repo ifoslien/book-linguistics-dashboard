@@ -92,3 +92,26 @@ def build_full_dataframe():
     sentiment_summary = arc_df.groupby('book')['sentiment'].agg(['mean', 'std']).reset_index()
     sentiment_summary.columns = ['book', 'avg_sentiment', 'sentiment_volatility']
     return df.merge(sentiment_summary, on='book')
+
+
+# word-level stats, counts how often each word appears once stopwords are filtered out
+from nltk.corpus import stopwords
+from collections import Counter
+
+nltk.download('stopwords', quiet=True)
+
+stop_words = set(stopwords.words('english'))
+
+def top_words(book, n=20):
+    words = gutenberg.words(book)
+    alpha_words = [w.lower() for w in words if w.isalpha()]
+    filtered = [w for w in alpha_words if w not in stop_words and len(w) > 1]
+    counts = Counter(filtered)
+    return counts.most_common(n)
+
+def build_top_words_dataframe(n=20):
+    rows = []
+    for book in books:
+        for word, count in top_words(book, n):
+            rows.append({'book': book, 'word': word, 'count': count})
+    return pd.DataFrame(rows)
