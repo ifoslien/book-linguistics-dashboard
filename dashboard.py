@@ -56,6 +56,44 @@ radar_fig.update_layout(
     title='Style Profile by Book'
 )
 
+# groups each book by author so the scatter plot can show clustering by author rather than by book
+author_names = {
+    'austen': 'Jane Austen',
+    'melville': 'Herman Melville',
+    'carroll': 'Lewis Carroll',
+    'chesterton': 'G.K. Chesterton'
+}
+df['author'] = df['book'].apply(lambda book: author_names[book.split('-')[0]])
+
+author_palette = {
+    'Jane Austen': '#A9C6E0',
+    'Herman Melville': '#D9A182',
+    'Lewis Carroll': '#D9A6BC',
+    'G.K. Chesterton': '#7A9B6E'
+}
+
+scatter_fig = px.scatter(
+    df,
+    x='type_token_ratio_sample',
+    y='flesch_kincaid_grade',
+    color='author',
+    text='book',
+    title='Vocabulary Richness vs Reading Difficulty by Author',
+    labels={
+        'type_token_ratio_sample': 'Vocabulary Richness (Type Token Ratio)',
+        'flesch_kincaid_grade': 'Reading Difficulty (Flesch-Kincaid Grade)',
+        'author': 'Author'
+    },
+    color_discrete_map=author_palette
+)
+scatter_fig.update_traces(textposition='top center', marker=dict(size=12))
+scatter_fig.update_layout(template='plotly_white')
+# pads the x axis so the book label text on the rightmost point (moby dick) doesn't get clipped by the card edge
+x_min = df['type_token_ratio_sample'].min()
+x_max = df['type_token_ratio_sample'].max()
+x_pad = (x_max - x_min) * 0.3
+scatter_fig.update_xaxes(range=[x_min - x_pad, x_max + x_pad])
+
 # pulls a few headline facts from the existing data for the summary row
 num_books = len(df)
 richest_vocab_book = df.loc[df['type_token_ratio_sample'].idxmax(), 'book']
@@ -84,7 +122,7 @@ stat_tiles = html.Div([
 # curated findings written during the earlier analysis, not recomputed here
 findings = [
     'Sense and Sensibility has the highest sentiment volatility in the set, despite sharing an author with the steadier Emma and Persuasion.',
-    'Moby Dick sits alone on the style map, distant from every other book on nearly every metric.',
+    'Moby Dick stands apart mainly in vocabulary richness, where its type-token ratio is well above every other book in the set, while its reading difficulty and sentiment land close to several of the others.',
     'The two Chesterton novels form the tightest style cluster of any pair in the set.',
     'Austen\'s three novels all surface formal social titles like mr and mrs among their top words, while neither Chesterton novel does.'
 ]
@@ -124,6 +162,9 @@ app.layout = html.Div([
     ], className='card'),
     html.Div([
         dcc.Graph(figure=radar_fig)
+    ], className='card'),
+    html.Div([
+        dcc.Graph(figure=scatter_fig)
     ], className='card'),
     html.Div([
         html.H2('Top Words by Book'),
