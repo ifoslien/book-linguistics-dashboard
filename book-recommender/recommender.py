@@ -1,6 +1,7 @@
 # recommender.py is its own separate Dash app, kept apart from dashboard.py on purpose
 from dash import Dash, dcc, html, Input, Output
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from recommender_analysis import build_recommender_dataframe, find_similar_books, books
 
 df = build_recommender_dataframe()
@@ -12,6 +13,9 @@ radar_labels = ['Vocabulary Richness', 'Sentence Length', 'Reading Difficulty', 
 # the chosen book gets a dark line to stand out, the three matches get the lighter bookish palette
 chosen_color = '#2b241c'
 match_palette = ['#A9C6E0', '#D9A182', '#8FBFAA']
+
+# grid positions for the five raw value subplots, in a 2 row by 3 col layout with one cell left empty
+raw_positions = [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2)]
 
 app = Dash(__name__)
 
@@ -64,13 +68,41 @@ def update_matches(selected_book):
         title=f'Style Comparison, {selected_book} vs Closest Matches'
     )
 
+    # the radar shows shape but hides the real numbers, since every feature gets squeezed onto a 0 to 1 scale
+    # this grid shows the actual value for each feature instead, one subplot per feature since they don't share a scale
+    raw_fig = make_subplots(rows=2, cols=3, subplot_titles=radar_labels)
+    for i, (feature, (r, c)) in enumerate(zip(radar_features, raw_positions)):
+        for book, color in zip(compare_books, compare_colors):
+            value = df.loc[df['book'] == book, feature].iloc[0]
+            raw_fig.add_trace(
+                go.Bar(
+                    x=[book],
+                    y=[value],
+                    marker=dict(color=color),
+                    name=book,
+                    legendgroup=book,
+                    # only shows each book once in the legend, on the first subplot, instead of five times over
+                    showlegend=(i == 0),
+                    text=[f'{value:.2f}'],
+                    textposition='outside'
+                ),
+                row=r, col=c
+            )
+    raw_fig.update_xaxes(showticklabels=False)
+    raw_fig.update_layout(
+        template='plotly_white',
+        title=f'Raw Values, {selected_book} vs Closest Matches',
+        height=650
+    )
+
     return [
         html.H2(f'Closest Matches to {selected_book}'),
         html.Div([
             html.Div(f'{row.book} (distance {row.distance:.3f})', className='finding-row')
             for row in matches.itertuples()
         ]),
-        dcc.Graph(figure=radar_fig)
+        dcc.Graph(figure=radar_fig),
+        dcc.Graph(figure=raw_fig)
     ]
 
 if __name__ == '__main__':
