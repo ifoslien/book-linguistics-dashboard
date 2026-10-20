@@ -57,16 +57,20 @@ def sentiment_arc(book, num_bins=20):
         binned_scores.append(sum(bin_scores) / len(bin_scores))
     return binned_scores
 
-def build_recommender_dataframe():
-    base_rows = [analyze_book(book) for book in books]
-    base_df = pd.DataFrame(base_rows)
-
+def build_recommender_arc_dataframe():
     arc_rows = []
     for book in books:
         scores = sentiment_arc(book)
         for i, score in enumerate(scores):
             arc_rows.append({'book': book, 'chunk': i + 1, 'sentiment': score})
-    arc_df = pd.DataFrame(arc_rows)
+    return pd.DataFrame(arc_rows)
+
+# takes the arc dataframe as an argument instead of recomputing it, since recommender.py needs
+# the per chunk detail for the sentiment arc chart and building it twice would mean scoring every
+# sentence in all 18 books twice over
+def build_recommender_dataframe(arc_df):
+    base_rows = [analyze_book(book) for book in books]
+    base_df = pd.DataFrame(base_rows)
 
     sentiment_summary = arc_df.groupby('book')['sentiment'].agg(['mean', 'std']).reset_index()
     sentiment_summary.columns = ['book', 'avg_sentiment', 'sentiment_volatility']

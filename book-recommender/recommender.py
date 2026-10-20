@@ -1,10 +1,12 @@
 # recommender.py is its own separate Dash app, kept apart from dashboard.py on purpose
 from dash import Dash, dcc, html, Input, Output
+import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from recommender_analysis import build_recommender_dataframe, find_similar_books, books
+from recommender_analysis import build_recommender_dataframe, build_recommender_arc_dataframe, find_similar_books, books
 
-df = build_recommender_dataframe()
+arc_df = build_recommender_arc_dataframe()
+df = build_recommender_dataframe(arc_df)
 
 # same five features find_similar_books uses to compute distance, shown here so the match is visible, not just claimed
 radar_features = ['type_token_ratio_sample', 'avg_sentence_length', 'flesch_kincaid_grade', 'avg_sentiment', 'sentiment_volatility']
@@ -68,6 +70,24 @@ def update_matches(selected_book):
         title=f'Style Comparison, {selected_book} vs Closest Matches'
     )
 
+    # neither the radar nor the raw values grid show how tone moves across the story, just where it lands on average
+    # this traces the same sentiment arc the original dashboard uses, filtered down to just the books being compared
+    compare_arc_df = arc_df[arc_df['book'].isin(compare_books)]
+    arc_fig = px.line(
+        compare_arc_df,
+        x='chunk',
+        y='sentiment',
+        color='book',
+        category_orders={'book': compare_books},
+        color_discrete_map=dict(zip(compare_books, compare_colors)),
+        title=f'Sentiment Across the Story, {selected_book} vs Closest Matches',
+        labels={'chunk': 'Story Progress (chunk)', 'sentiment': 'Sentiment Score'}
+    )
+    # the chosen book gets a thicker line so it still stands out here, same idea as the radar
+    for trace in arc_fig.data:
+        trace.line.width = 4 if trace.name == selected_book else 2
+    arc_fig.update_layout(template='plotly_white')
+
     # the radar shows shape but hides the real numbers, since every feature gets squeezed onto a 0 to 1 scale
     # this grid shows the actual value for each feature instead, one subplot per feature since they don't share a scale
     raw_fig = make_subplots(rows=2, cols=3, subplot_titles=radar_labels)
@@ -102,6 +122,7 @@ def update_matches(selected_book):
             for row in matches.itertuples()
         ]),
         dcc.Graph(figure=radar_fig),
+        dcc.Graph(figure=arc_fig),
         dcc.Graph(figure=raw_fig)
     ]
 
