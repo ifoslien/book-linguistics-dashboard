@@ -19,10 +19,19 @@ match_palette = ['#A9C6E0', '#D9A182', '#8FBFAA']
 # grid positions for the five raw value subplots, in a 2 row by 3 col layout with one cell left empty
 raw_positions = [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2)]
 
+# short writeup explaining what this tool does and how it differs from the original dashboard
+about_panel = html.Div([
+    html.H2('About This Recommender'),
+    html.P('This tool searches the full NLTK Gutenberg corpus, 18 books across 12 authors, and surfaces the three books whose writing style sits closest to whichever book you pick. It runs independently of the Linguistic Style Dashboard, which analyzes a curated set of seven of those books in more depth rather than searching across all of them.'),
+    html.P('Each book is scored on five features: vocabulary richness, average sentence length, reading difficulty, and the average and volatility of its sentiment arc, scored the same way as the original dashboard. Every feature is min-max normalized across the 18 books, and similarity is the Euclidean distance between those normalized scores, so no single feature dominates the match just for having a bigger scale.'),
+    html.P('Built as part of a 100 days of code challenge.')
+], className='card')
+
 app = Dash(__name__)
 
 app.layout = html.Div([
     html.H1('Book Recommender'),
+    about_panel,
     html.Div([
         html.H2('Pick a Book'),
         dcc.Dropdown(
