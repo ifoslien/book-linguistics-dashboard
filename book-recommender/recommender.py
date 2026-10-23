@@ -11,6 +11,7 @@ df = build_recommender_dataframe(arc_df)
 # same five features find_similar_books uses to compute distance, shown here so the match is visible, not just claimed
 radar_features = ['type_token_ratio_sample', 'avg_sentence_length', 'flesch_kincaid_grade', 'avg_sentiment', 'sentiment_volatility']
 radar_labels = ['Vocabulary Richness', 'Sentence Length', 'Reading Difficulty', 'Avg Sentiment', 'Sentiment Volatility']
+feature_label_map = dict(zip(radar_features, radar_labels))
 
 # the chosen book gets a dark line to stand out, the three matches get the lighter bookish palette
 chosen_color = '#2b241c'
@@ -60,6 +61,14 @@ def update_matches(selected_book):
         max_val = df[feature].max()
         span = max_val - min_val
         normalized[feature] = (df[feature] - min_val) / span if span else 0
+
+    # a distance number says how close a match is but not why, this names the single feature each match is nearest on
+    target_row_norm = normalized.loc[normalized['book'] == selected_book, radar_features].iloc[0]
+
+    def closest_feature(match_book):
+        match_row_norm = normalized.loc[normalized['book'] == match_book, radar_features].iloc[0]
+        diffs = (target_row_norm - match_row_norm).abs()
+        return feature_label_map[diffs.idxmin()]
 
     radar_fig = go.Figure()
     for book, color in zip(compare_books, compare_colors):
@@ -127,7 +136,7 @@ def update_matches(selected_book):
     return [
         html.H2(f'Closest Matches to {selected_book}'),
         html.Div([
-            html.Div(f'{row.book} (distance {row.distance:.3f})', className='finding-row')
+            html.Div(f'{row.book} (distance {row.distance:.3f}), closest in {closest_feature(row.book)}', className='finding-row')
             for row in matches.itertuples()
         ]),
         dcc.Graph(figure=radar_fig),
