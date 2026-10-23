@@ -13,6 +13,45 @@ radar_features = ['type_token_ratio_sample', 'avg_sentence_length', 'flesch_kinc
 radar_labels = ['Vocabulary Richness', 'Sentence Length', 'Reading Difficulty', 'Avg Sentiment', 'Sentiment Volatility']
 feature_label_map = dict(zip(radar_features, radar_labels))
 
+# plain language gloss for each feature, shown the first time that feature is named in a given result
+feature_definitions = {
+    'Vocabulary Richness': 'how varied its word choice is',
+    'Sentence Length': 'how long its sentences run on average',
+    'Reading Difficulty': 'how difficult the text is to read',
+    'Avg Sentiment': 'how positive or negative its tone is overall',
+    'Sentiment Volatility': 'how much the tone shifts throughout the book'
+}
+
+# title and author for each book in the corpus, pulled from each text's own gutenberg header
+# the bible has no single author, so it maps to None and gets left out of the sentence
+book_info = {
+    'austen-emma.txt': ('Emma', 'Jane Austen'),
+    'austen-persuasion.txt': ('Persuasion', 'Jane Austen'),
+    'austen-sense.txt': ('Sense and Sensibility', 'Jane Austen'),
+    'bible-kjv.txt': ('The King James Bible', None),
+    'blake-poems.txt': ('Poems', 'William Blake'),
+    'bryant-stories.txt': ('Stories to Tell to Children', 'Sara Cone Bryant'),
+    'burgess-busterbrown.txt': ('The Adventures of Buster Bear', 'Thornton W. Burgess'),
+    'carroll-alice.txt': ("Alice's Adventures in Wonderland", 'Lewis Carroll'),
+    'chesterton-ball.txt': ('The Ball and The Cross', 'G.K. Chesterton'),
+    'chesterton-brown.txt': ('The Wisdom of Father Brown', 'G.K. Chesterton'),
+    'chesterton-thursday.txt': ('The Man Who Was Thursday', 'G.K. Chesterton'),
+    'edgeworth-parents.txt': ("The Parent's Assistant", 'Maria Edgeworth'),
+    'melville-moby_dick.txt': ('Moby Dick', 'Herman Melville'),
+    'milton-paradise.txt': ('Paradise Lost', 'John Milton'),
+    'shakespeare-caesar.txt': ('The Tragedie of Julius Caesar', 'William Shakespeare'),
+    'shakespeare-hamlet.txt': ('The Tragedie of Hamlet', 'William Shakespeare'),
+    'shakespeare-macbeth.txt': ('The Tragedie of Macbeth', 'William Shakespeare'),
+    'whitman-leaves.txt': ('Leaves of Grass', 'Walt Whitman')
+}
+
+# builds the "'Title' by Author (fileid.txt)" phrase used in the match sentences, and leaves out the author when there isn't one
+def book_label(book):
+    title, author = book_info[book]
+    if author:
+        return f"'{title}' by {author} ({book})"
+    return f"'{title}' ({book})"
+
 # the chosen book gets a dark line to stand out, the three matches get the lighter bookish palette
 chosen_color = '#2b241c'
 match_palette = ['#A9C6E0', '#D9A182', '#8FBFAA']
@@ -20,12 +59,10 @@ match_palette = ['#A9C6E0', '#D9A182', '#8FBFAA']
 # grid positions for the five raw value subplots, in a 2 row by 3 col layout with one cell left empty
 raw_positions = [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2)]
 
-# short writeup explaining what this tool does and how it differs from the original dashboard
+# short writeup explaining what this tool does, kept to one paragraph
 about_panel = html.Div([
     html.H2('About This Recommender'),
-    html.P('This tool searches the full NLTK Gutenberg corpus, 18 books across 12 authors, and surfaces the three books whose writing style sits closest to whichever book you pick. It runs independently of the Linguistic Style Dashboard, which analyzes a curated set of seven of those books in more depth rather than searching across all of them.'),
-    html.P('Each book is scored on five features: vocabulary richness, average sentence length, reading difficulty, and the average and volatility of its sentiment arc, scored the same way as the original dashboard. Every feature is min-max normalized across the 18 books, and similarity is the Euclidean distance between those normalized scores, so no single feature dominates the match just for having a bigger scale.'),
-    html.P('Built as part of a 100 days of code challenge.')
+    html.P('This tool searches the full NLTK Gutenberg corpus, 18 books across 12 authors, and surfaces the three books whose writing style sits closest to whichever book you pick. Each book is scored on five features: vocabulary richness, average sentence length, reading difficulty, and the average and volatility of its sentiment arc, scored the same way as the original dashboard. Every feature is min-max normalized across the 18 books, and similarity is the Euclidean distance between those normalized scores, so no single feature dominates the match just for having a bigger scale.')
 ], className='card')
 
 app = Dash(__name__)
@@ -69,6 +106,25 @@ def update_matches(selected_book):
         match_row_norm = normalized.loc[normalized['book'] == match_book, radar_features].iloc[0]
         diffs = (target_row_norm - match_row_norm).abs()
         return feature_label_map[diffs.idxmin()]
+
+    # one sentence per match instead of one sentence covering all three, since the three matches can split
+    # across one, two, or three different closest features depending on the book, and a single sentence
+    # chaining a variable number of reasons together gets hard to follow
+    chosen_label = book_label(selected_book)
+    explained_features = set()
+    match_sentences = []
+    for i, row in enumerate(matches.itertuples()):
+        feature = closest_feature(row.book)
+        match_label = book_label(row.book)
+        if feature in explained_features:
+            reason = feature
+        else:
+            reason = f'{feature}, {feature_definitions[feature]}'
+            explained_features.add(feature)
+        if i == 0:
+            match_sentences.append(f'{chosen_label} most closely matches {match_label} in {reason}.')
+        else:
+            match_sentences.append(f"It's also closest to {match_label} in {reason}.")
 
     radar_fig = go.Figure()
     for book, color in zip(compare_books, compare_colors):
@@ -135,10 +191,7 @@ def update_matches(selected_book):
 
     return [
         html.H2(f'Closest Matches to {selected_book}'),
-        html.Div([
-            html.Div(f'{row.book} (distance {row.distance:.3f}), closest in {closest_feature(row.book)}', className='finding-row')
-            for row in matches.itertuples()
-        ]),
+        html.Div(' '.join(match_sentences), className='finding-row'),
         dcc.Graph(figure=radar_fig),
         dcc.Graph(figure=arc_fig),
         dcc.Graph(figure=raw_fig)
