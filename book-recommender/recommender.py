@@ -74,10 +74,11 @@ app.layout = html.Div([
         html.H2('Pick a Book'),
         dcc.Dropdown(
             id='target-book-dropdown',
-            options=[{'label': book, 'value': book} for book in sorted(books)],
+            # shows the real title and author instead of the bare fileid, sorted alphabetically by that same label
+            options=[{'label': book_label(book), 'value': book} for book in sorted(books, key=lambda b: book_label(b))],
             value='austen-emma.txt'
         )
-    ], className='card'),
+    ], className='book-picker'),
     html.Div(id='matches-panel', className='card')
 ], className='page')
 
@@ -192,9 +193,11 @@ def update_matches(selected_book):
     return [
         html.H2(f'Closest Matches to {selected_book}'),
         html.Div(' '.join(match_sentences), className='finding-row'),
-        dcc.Graph(figure=radar_fig),
-        dcc.Graph(figure=arc_fig),
-        dcc.Graph(figure=raw_fig)
+        dcc.Tabs(value='radar', className='classic-tabs', children=[
+            dcc.Tab(label='Style Comparison', value='radar', children=[dcc.Graph(figure=radar_fig)]),
+            dcc.Tab(label='Sentiment Arc', value='arc', children=[dcc.Graph(figure=arc_fig)]),
+            dcc.Tab(label='Raw Values', value='raw', children=[dcc.Graph(figure=raw_fig)])
+        ])
     ]
 
 if __name__ == '__main__':
