@@ -63,7 +63,7 @@ raw_positions = [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2)]
 about_panel = html.Div([
     html.H2('About This Recommender'),
     html.P('This tool searches the full NLTK Gutenberg corpus, 18 books across 12 authors, and surfaces the three books whose writing style sits closest to whichever book you pick. Each book is scored on five features: vocabulary richness, average sentence length, reading difficulty, and the average and volatility of its sentiment arc, scored the same way as the original dashboard. Every feature is min-max normalized across the 18 books, and similarity is the Euclidean distance between those normalized scores, so no single feature dominates the match just for having a bigger scale.')
-], className='card')
+], className='book-page')
 
 app = Dash(__name__)
 
@@ -79,7 +79,7 @@ app.layout = html.Div([
             value='austen-emma.txt'
         )
     ], className='book-picker'),
-    html.Div(id='matches-panel', className='card')
+    html.Div(id='matches-panel', className='book-page')
 ], className='page')
 
 # reruns whenever a different book is picked, shows the three closest matches by style distance
@@ -108,24 +108,19 @@ def update_matches(selected_book):
         diffs = (target_row_norm - match_row_norm).abs()
         return feature_label_map[diffs.idxmin()]
 
-    # one sentence per match instead of one sentence covering all three, since the three matches can split
-    # across one, two, or three different closest features depending on the book, and a single sentence
-    # chaining a variable number of reasons together gets hard to follow
-    chosen_label = book_label(selected_book)
+    # each match gets its own heading and a short explanation instead of one shared paragraph, so every
+    # book gets its own small showcase rather than being folded into a single block of text
+    chosen_title = book_info[selected_book][0]
     explained_features = set()
-    match_sentences = []
-    for i, row in enumerate(matches.itertuples()):
+    match_entries = []
+    for row in matches.itertuples():
         feature = closest_feature(row.book)
-        match_label = book_label(row.book)
         if feature in explained_features:
             reason = feature
         else:
             reason = f'{feature}, {feature_definitions[feature]}'
             explained_features.add(feature)
-        if i == 0:
-            match_sentences.append(f'{chosen_label} most closely matches {match_label} in {reason}.')
-        else:
-            match_sentences.append(f"It's also closest to {match_label} in {reason}.")
+        match_entries.append((book_label(row.book), f"Most similar to '{chosen_title}' in {reason}."))
 
     radar_fig = go.Figure()
     for book, color in zip(compare_books, compare_colors):
@@ -142,7 +137,11 @@ def update_matches(selected_book):
     radar_fig.update_layout(
         polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
         template='plotly_white',
-        title=f'Style Comparison, {selected_book} vs Closest Matches'
+        title=f'Style Comparison, {selected_book} vs Closest Matches',
+        # only the headline title goes serif, the axis and legend labels stay in the default sans since
+        # serif gets harder to read at the smaller sizes those use
+        title_font_family='Lora, serif',
+        title_font_size=18
     )
 
     # neither the radar nor the raw values grid show how tone moves across the story, just where it lands on average
@@ -161,7 +160,7 @@ def update_matches(selected_book):
     # the chosen book gets a thicker line so it still stands out here, same idea as the radar
     for trace in arc_fig.data:
         trace.line.width = 4 if trace.name == selected_book else 2
-    arc_fig.update_layout(template='plotly_white')
+    arc_fig.update_layout(template='plotly_white', title_font_family='Lora, serif', title_font_size=18)
 
     # the radar shows shape but hides the real numbers, since every feature gets squeezed onto a 0 to 1 scale
     # this grid shows the actual value for each feature instead, one subplot per feature since they don't share a scale
@@ -187,12 +186,22 @@ def update_matches(selected_book):
     raw_fig.update_layout(
         template='plotly_white',
         title=f'Raw Values, {selected_book} vs Closest Matches',
+        title_font_family='Lora, serif',
+        title_font_size=18,
         height=650
     )
+    # the five subplot titles act like mini headlines too, so they get the serif treatment along with the main title
+    raw_fig.update_annotations(font=dict(family='Lora, serif', size=13))
 
     return [
         html.H2(f'Closest Matches to {selected_book}'),
-        html.Div(' '.join(match_sentences), className='finding-row'),
+        html.Div([
+            html.Div([
+                html.H3(heading),
+                html.P(paragraph)
+            ], className='match-entry')
+            for heading, paragraph in match_entries
+        ]),
         dcc.Tabs(value='radar', className='classic-tabs', children=[
             dcc.Tab(label='Style Comparison', value='radar', children=[dcc.Graph(figure=radar_fig)]),
             dcc.Tab(label='Sentiment Arc', value='arc', children=[dcc.Graph(figure=arc_fig)]),

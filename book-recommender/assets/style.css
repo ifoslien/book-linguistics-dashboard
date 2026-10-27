@@ -1,9 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Inter:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Inter:wght@400;500&display=swap');
 
+/* Dash's own component styling uses this variable for focus accents on the dropdown and tabs, overriding
+   it here swaps the default bright purple for the softer lavender already used elsewhere in the palette */
+:root {
+    --Dash-Fill-Interactive-Strong: #A79BD1;
+}
+
+/* serif is now the default for the page, Inter is kept only for the chart legends and axis tick labels, the smallest text on the page */
 body {
     background-color: #f7f3ec;
     color: #2b241c;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
 }
 
 h1 {
@@ -15,7 +22,7 @@ h1 {
     background-color: #fffdf8;
     border: 1px solid #e8e0d0;
     border-radius: 4px;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
 }
 
 .Select-value-label {
@@ -25,7 +32,7 @@ h1 {
 .Select-menu-outer {
     background-color: #fffdf8;
     border: 1px solid #e8e0d0;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
 }
 
 .Select-option {
@@ -106,6 +113,13 @@ h2 {
     margin-bottom: 16px;
 }
 
+h3 {
+    font-family: 'Lora', serif;
+    color: #2b241c;
+    font-size: 17px;
+    margin-bottom: 4px;
+}
+
 .finding-row {
     padding: 12px 16px;
     border-left: 3px solid #A9C6E0;
@@ -116,10 +130,36 @@ h2 {
     font-size: 15px;
 }
 
+/* plain text, no box, a thin rule between entries instead reads more like a book's own margin notes */
+.match-entry {
+    padding: 16px 0;
+    border-top: 1px solid #e8e0d0;
+}
+
+.match-entry:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+
+.match-entry p {
+    margin: 0;
+    color: #4a4133;
+}
+
 /* no background or border, sits directly on the page instead of in its own box */
 .book-picker {
     padding: 8px 4px 24px;
     margin-bottom: 24px;
+}
+
+/* straight corners and a deeper shadow instead of the rounded, lightly shadowed card look, meant to read like a lifted book page */
+.book-page {
+    background-color: #fffdf8;
+    border: 1px solid #d9cab0;
+    border-radius: 0;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 6px 16px rgba(43, 36, 28, 0.18);
 }
 
 .classic-tabs .tab {
@@ -141,7 +181,8 @@ h2 {
 
 .classic-tabs .tab-content {
     background-color: #fffdf8;
-    border: 1px solid #e8e0d0;
+    border: 1px solid #d9cab0;
     border-top: none;
     padding: 16px;
+    box-shadow: 0 6px 16px rgba(43, 36, 28, 0.18);
 }
