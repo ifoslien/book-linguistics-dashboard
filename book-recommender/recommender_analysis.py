@@ -93,3 +93,57 @@ def find_similar_books(target_book, df, n=3):
 
     ranked = normalized[normalized['book'] != target_book].sort_values('distance').head(n)
     return df.merge(ranked[['book', 'distance']], on='book').sort_values('distance').reset_index(drop=True)
+
+# the longest possible distance between two books, every feature normalized to 0 to 1 and maximally
+# different on all five at once, used to turn a raw distance into a percentage
+MAX_DISTANCE = 5 ** 0.5
+
+# converts a raw distance into a linguistic similarity percentage, a measure of how close the five
+# writing style features land rather than how alike the books' content or themes are
+def similarity_percent(distance):
+    return round(max(0, 1 - distance / MAX_DISTANCE) * 100)
+
+# finds a short passage whose local score on the matched feature sits closest to the book's own
+# measured value for it, so the quote shown is typical of why the book scored the way it did
+# sentiment volatility is the one exception, there the passage with the largest swing away from
+# the book's average sentiment is what demonstrates the volatility, not a passage near the average
+def representative_excerpt(book, feature, target, window=3):
+    sents = list(gutenberg.sents(book))
+    if len(sents) <= window:
+        return ' '.join(' '.join(s) for s in sents)
+
+    # samples a bounded number of windows spread across the book instead of checking every single one,
+    # so a long book like the Bible or Moby Dick doesn't make this slow
+    span = len(sents) - window
+    num_samples = min(200, span)
+    step = max(1, span // num_samples)
+
+    best_start, best_score = 0, None
+    for i in range(0, span, step):
+        chunk_sents = sents[i:i + window]
+        chunk_words = [w for s in chunk_sents for w in s]
+        alpha_words = [w.lower() for w in chunk_words if w.isalpha()]
+        if len(alpha_words) < 15:
+            continue
+        chunk_text = ' '.join(' '.join(s) for s in chunk_sents)
+
+        if feature == 'Vocabulary Richness':
+            local_value = len(set(alpha_words)) / len(alpha_words)
+        elif feature == 'Sentence Length':
+            local_value = len(chunk_words) / window
+        elif feature == 'Reading Difficulty':
+            local_value = textstat.flesch_kincaid_grade(chunk_text)
+        else:
+            local_value = sia.polarity_scores(chunk_text)['compound']
+
+        # every feature but volatility wants the closest match to the book's own average, volatility
+        # wants the opposite, the furthest swing away from it
+        if feature == 'Sentiment Volatility':
+            score = abs(local_value - target)
+        else:
+            score = -abs(local_value - target)
+
+        if best_score is None or score > best_score:
+            best_score, best_start = score, i
+
+    return ' '.join(' '.join(s) for s in sents[best_start:best_start + window])

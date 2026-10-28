@@ -177,6 +177,29 @@ h3 {
     border: none;
     border-bottom: 3px solid #A9C6E0;
     box-shadow: none;
+    /* Dash injects its own tab stylesheet at runtime with a more specific selector for this exact
+       border, so border-top: none here loses to Dash's default unless forced with !important */
+    border-top: none !important;
+}
+
+.excerpt-group {
+    margin: 12px 0;
+}
+
+.excerpt {
+    font-style: italic;
+    color: #4a4133;
+    border-left: 2px solid #d9cab0;
+    padding-left: 16px;
+    margin: 0 0 4px;
+}
+
+.excerpt-attribution {
+    font-size: 13px;
+    font-style: normal;
+    color: #7a7062;
+    padding-left: 16px;
+    margin: 0;
 }
 
 .classic-tabs .tab-content {

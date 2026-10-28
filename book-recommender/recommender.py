@@ -3,7 +3,7 @@ from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from recommender_analysis import build_recommender_dataframe, build_recommender_arc_dataframe, find_similar_books, books
+from recommender_analysis import build_recommender_dataframe, build_recommender_arc_dataframe, find_similar_books, similarity_percent, representative_excerpt, books
 
 arc_df = build_recommender_arc_dataframe()
 df = build_recommender_dataframe(arc_df)
@@ -20,6 +20,17 @@ feature_definitions = {
     'Reading Difficulty': 'how difficult the text is to read',
     'Avg Sentiment': 'how positive or negative its tone is overall',
     'Sentiment Volatility': 'how much the tone shifts throughout the book'
+}
+
+# maps each feature label to the dataframe column representative_excerpt should measure a passage against
+# sentiment volatility has no column of its own to sample against, a passage's sentiment still gets compared
+# to the book's average sentiment, just judged by how far it swings away from that average instead of how close
+feature_to_column = {
+    'Vocabulary Richness': 'type_token_ratio_sample',
+    'Sentence Length': 'avg_sentence_length',
+    'Reading Difficulty': 'flesch_kincaid_grade',
+    'Avg Sentiment': 'avg_sentiment',
+    'Sentiment Volatility': 'avg_sentiment'
 }
 
 # title and author for each book in the corpus, pulled from each text's own gutenberg header
@@ -62,7 +73,7 @@ raw_positions = [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2)]
 # short writeup explaining what this tool does, kept to one paragraph
 about_panel = html.Div([
     html.H2('About This Recommender'),
-    html.P('This tool searches the full NLTK Gutenberg corpus, 18 books across 12 authors, and surfaces the three books whose writing style sits closest to whichever book you pick. Each book is scored on five features: vocabulary richness, average sentence length, reading difficulty, and the average and volatility of its sentiment arc, scored the same way as the original dashboard. Every feature is min-max normalized across the 18 books, and similarity is the Euclidean distance between those normalized scores, so no single feature dominates the match just for having a bigger scale.')
+    html.P('This tool searches the full NLTK Gutenberg corpus, 18 books across 12 authors, and surfaces the three books whose writing style sits closest to whichever book you pick. Each book is scored on five features: vocabulary richness, how varied its word choice is, average sentence length, how long its sentences run, reading difficulty, how hard the text is to read, average sentiment, how positive or negative its tone is overall, and sentiment volatility, how much that tone shifts through the story. Every feature is min-max normalized across the 18 books, and similarity is the Euclidean distance between those normalized scores, turned into a linguistic similarity percentage so no single feature dominates the match just for having a bigger scale. That percentage reflects how close the five writing style features land, not how alike the books are in content or theme, so two very different stories can still score a high linguistic similarity.')
 ], className='book-page')
 
 app = Dash(__name__)
@@ -111,16 +122,38 @@ def update_matches(selected_book):
     # each match gets its own heading and a short explanation instead of one shared paragraph, so every
     # book gets its own small showcase rather than being folded into a single block of text
     chosen_title = book_info[selected_book][0]
+    chosen_row = df.loc[df['book'] == selected_book].iloc[0]
     explained_features = set()
+    # caches the chosen book's excerpt by feature, so if two matches share the same closest feature the
+    # chosen book's passage for that feature only gets computed once instead of twice
+    chosen_excerpts = {}
     match_entries = []
     for row in matches.itertuples():
         feature = closest_feature(row.book)
+        column = feature_to_column[feature]
+        pct = similarity_percent(row.distance)
+
         if feature in explained_features:
             reason = feature
         else:
             reason = f'{feature}, {feature_definitions[feature]}'
             explained_features.add(feature)
-        match_entries.append((book_label(row.book), f"Most similar to '{chosen_title}' in {reason}."))
+        sentence = f"{pct}% linguistic similarity to '{chosen_title}', closest in {reason}."
+
+        if feature not in chosen_excerpts:
+            chosen_excerpts[feature] = representative_excerpt(selected_book, feature, chosen_row[column])
+
+        match_row = df.loc[df['book'] == row.book].iloc[0]
+        match_excerpt = representative_excerpt(row.book, feature, match_row[column])
+
+        match_entries.append({
+            'heading': book_label(row.book),
+            'sentence': sentence,
+            'chosen_title': chosen_title,
+            'chosen_excerpt': chosen_excerpts[feature],
+            'match_title': book_info[row.book][0],
+            'match_excerpt': match_excerpt
+        })
 
     radar_fig = go.Figure()
     for book, color in zip(compare_books, compare_colors):
@@ -197,10 +230,18 @@ def update_matches(selected_book):
         html.H2(f'Closest Matches to {selected_book}'),
         html.Div([
             html.Div([
-                html.H3(heading),
-                html.P(paragraph)
+                html.H3(entry['heading']),
+                html.P(entry['sentence']),
+                html.Div([
+                    html.P(f"“{entry['chosen_excerpt']}”", className='excerpt'),
+                    html.P(f"— {entry['chosen_title']}", className='excerpt-attribution')
+                ], className='excerpt-group'),
+                html.Div([
+                    html.P(f"“{entry['match_excerpt']}”", className='excerpt'),
+                    html.P(f"— {entry['match_title']}", className='excerpt-attribution')
+                ], className='excerpt-group')
             ], className='match-entry')
-            for heading, paragraph in match_entries
+            for entry in match_entries
         ]),
         dcc.Tabs(value='radar', className='classic-tabs', children=[
             dcc.Tab(label='Style Comparison', value='radar', children=[dcc.Graph(figure=radar_fig)]),
