@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Inter:wght@400;500&display=swap');
 
 /* Dash's own component styling uses this variable for focus accents on the dropdown and tabs, overriding
-   it here swaps the default bright purple for the softer lavender already used elsewhere in the palette */
+   it here swaps the default bright purple for the same light blue used as the one accent color everywhere else */
 :root {
-    --Dash-Fill-Interactive-Strong: #A79BD1;
+    --Dash-Fill-Interactive-Strong: #A9C6E0;
 }
 
 /* serif is now the default for the page, Inter is kept only for the chart legends and axis tick labels, the smallest text on the page */
@@ -16,6 +16,14 @@ body {
 h1 {
     font-family: 'Lora', serif;
     color: #2b241c;
+    margin-bottom: 24px;
+}
+
+h1::before {
+    content: '\2748';
+    color: #A9C6E0;
+    margin-right: 12px;
+    font-size: 0.85em;
 }
 
 .Select-control {
@@ -113,6 +121,13 @@ h2 {
     margin-bottom: 16px;
 }
 
+h2::before {
+    content: '\2748';
+    color: #A9C6E0;
+    margin-right: 10px;
+    font-size: 0.8em;
+}
+
 h3 {
     font-family: 'Lora', serif;
     color: #2b241c;
@@ -146,6 +161,14 @@ h3 {
     color: #4a4133;
 }
 
+/* dark text on a light blue highlight, like a marker over the number, instead of colored or bold text */
+.pct-accent {
+    color: #2b241c;
+    background-color: #A9C6E0;
+    padding: 1px 5px;
+    border-radius: 2px;
+}
+
 /* no background or border, sits directly on the page instead of in its own box */
 .book-picker {
     padding: 8px 4px 24px;
@@ -165,8 +188,14 @@ h3 {
 .classic-tabs .tab {
     font-family: 'Lora', serif;
     color: #7a7062;
-    padding: 12px 20px;
-    border: none;
+    padding: 12px 14px;
+    font-size: 15px;
+    /* with six tabs splitting the row evenly, the bold selected label is just wide enough to wrap onto
+       a second line at the old padding and size, nowrap stops that instead of letting it wrap */
+    white-space: nowrap;
+    /* Dash gives the last tab its own more specific resting border, a gray box around just that one
+       tab, so this needs !important to actually clear it on every tab including the last */
+    border: none !important;
     background-color: transparent;
     box-shadow: none;
 }
@@ -174,12 +203,12 @@ h3 {
 .classic-tabs .tab--selected {
     color: #2b241c;
     font-weight: 600;
-    border: none;
-    border-bottom: 3px solid #A9C6E0;
+    /* Dash's injected stylesheet has its own selected state borders, a top border on every tab and a
+       bottom border specifically suppressed on the last tab, both more specific than this rule, so the
+       whole border needs !important and the bottom side is set again after to win back the underline */
+    border: none !important;
+    border-bottom: 3px solid #A9C6E0 !important;
     box-shadow: none;
-    /* Dash injects its own tab stylesheet at runtime with a more specific selector for this exact
-       border, so border-top: none here loses to Dash's default unless forced with !important */
-    border-top: none !important;
 }
 
 .excerpt-group {
@@ -189,7 +218,7 @@ h3 {
 .excerpt {
     font-style: italic;
     color: #4a4133;
-    border-left: 2px solid #d9cab0;
+    border-left: 2px solid #A9C6E0;
     padding-left: 16px;
     margin: 0 0 4px;
 }
@@ -208,4 +237,75 @@ h3 {
     border-top: none;
     padding: 16px;
     box-shadow: 0 6px 16px rgba(43, 36, 28, 0.18);
+}
+
+.compare-pickers {
+    display: flex;
+    gap: 24px;
+}
+
+.compare-picker {
+    flex: 1;
+}
+
+.compare-picker label {
+    display: block;
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: #7a7062;
+    margin-bottom: 6px;
+}
+
+.excerpt-entry {
+    padding: 16px 0;
+    border-top: 1px solid #e8e0d0;
+}
+
+.excerpt-entry:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+
+.excerpt-match-label {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    color: #2b241c;
+    margin: 0 0 8px;
+}
+
+.tape-wrapper {
+    overflow-x: auto;
+}
+
+.tape-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+}
+
+.tape-table th,
+.tape-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e8e0d0;
+}
+
+.tape-table th {
+    font-family: 'Lora', serif;
+    color: #2b241c;
+    font-weight: 600;
+}
+
+.tape-feature-label {
+    color: #7a7062;
+}
+
+.tape-reference {
+    font-weight: 600;
+    color: #2b241c;
+}
+
+.tape-sim-row td {
+    border-top: 2px solid #d9cab0;
+    font-weight: 600;
 }
