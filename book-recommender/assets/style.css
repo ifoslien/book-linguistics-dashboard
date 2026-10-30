@@ -13,17 +13,12 @@ body {
     font-family: 'Lora', Georgia, 'Times New Roman', serif;
 }
 
+/* a darker shade of the one accent blue instead of the usual dark brown, no sparkle before the title
+   itself since the sparkle is meant to mark a section, not the page's own name */
 h1 {
     font-family: 'Lora', serif;
-    color: #2b241c;
+    color: #3E6690;
     margin-bottom: 24px;
-}
-
-h1::before {
-    content: '\2748';
-    color: #A9C6E0;
-    margin-right: 12px;
-    font-size: 0.85em;
 }
 
 .Select-control {
@@ -173,6 +168,13 @@ h3 {
 .book-picker {
     padding: 8px 4px 24px;
     margin-bottom: 24px;
+}
+
+/* keeps the book picker's search box outlined in the accent blue at rest too, not just while focused,
+   Dash's own resting border uses a separate variable so this needs its own override. scoped by id since
+   the compare section's two dropdowns below share this same book-picker class and should stay as they are */
+#target-book-dropdown {
+    border: 1px solid #A9C6E0 !important;
 }
 
 /* straight corners and a deeper shadow instead of the rounded, lightly shadowed card look, meant to read like a lifted book page */
